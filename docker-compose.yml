@@ -1,0 +1,113 @@
+# The docker-compose file must start with a version tag.
+# We use "3" as this is the most recent version at the time of this writing.
+
+version: "3.7"
+
+# Note that docker-composes works with services.
+# 1 service = 1 container.
+# A service can be a client, server, database server ...
+# The section that will describe services starts with 'services'.
+
+services:
+
+  # As said, we are going to create a client and server application.
+  # This means we need two services.
+  # First service (container): server.
+  # You can call it whatever the developer needs.
+  # A descriptive name for the service helps define its role.
+  # Here we use the 'server' keyword to name the corresponding service.
+
+  server:
+ 
+    # The "build" keyword allows you to set
+    # path to the Dockerfile to use to build the image,
+    # which will start the service.
+    # Here 'server /' matches the path to the server folder,
+    # which contains the corresponding Dockerfile.
+
+    build: server/
+
+
+    # Command to run after image creation.
+    # The following command means running "python ./server.py".
+#    command: /server/launch-server.sh server.py
+
+    command: python3 /server/server.py
+
+    # Remember that the port in 'server / server.py' is 1234.
+    # If we want to access the server from our computer (from outside the container),
+    # we have to arrange forwarding of this port to the port of the computer.
+    # The 'ports' keyword will help us do this.
+    # When using it, the following construction is used: [computer port]: [container port]
+    # In our case, you need to use the computer port 1234 and organize its connection with the port
+    # 1234 containers (since it is on this port that the server
+    # waiting for requests).
+
+    #ports:
+    #  - 1234:1234
+
+    volumes:
+      - type: bind
+        source: ./server
+        target: /server
+#      - "./server:/server"
+  # Second service (container): client.
+  # This service is named 'client'.
+
+
+  client-telegram:
+    # Here 'client / matches the path to the folder that contains
+    # Dockerfile for the client side of the system.
+
+    build: client-telegram/
+
+    # Command to run after image creation.
+    # The following command means running "python ./client.py".
+
+    command: python3 /client-telegram/client-telegram.py
+
+    # The 'network_mode' keyword is used to describe the type of network.
+    # Here we indicate that the container can access the 'localhost' of the computer.
+
+    #network_mode: host
+
+    # Ключевое слово 'depends_on' позволяет указывать, должен ли сервис,
+    # прежде чем запуститься, ждать, когда будут готовы к работе другие сервисы.
+    # Нам нужно, чтобы сервис 'client' дождался бы готовности к работе сервиса 'server'.
+
+    depends_on:
+      - server
+    volumes:
+      - type: bind
+        source: ./client-telegram
+        target: /client-telegram/
+
+
+  client-html_frontend:
+    # Here 'client / matches the path to the folder that contains
+    # Dockerfile for the client side of the system.
+
+    build: client-html_frontend/
+
+    # Command to run after image creation.
+    # The following command means running "python ./client.py".
+
+    command: python3 /client-html_frontend/client-html.py
+
+    # The 'network_mode' keyword is used to describe the type of network.
+    # Here we indicate that the container can access the 'localhost' of the computer.
+
+    #network_mode: host
+
+    # The 'depends_on' keyword allows you to specify whether the service should
+    # before starting, wait for other services to be ready to run.
+    # We want the 'client' service to wait until the 'server' service is ready.
+
+    ports:
+      - 4000:4000
+    depends_on:
+      - server
+    volumes:
+     - type: bind
+       source: ./client-html_frontend
+       target: /client-html_frontend/
